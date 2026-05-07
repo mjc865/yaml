@@ -117,27 +117,30 @@ function result = convertIntegerOrLogical(data)
         return
     end
 
-    % Create Java array.
+    % Create Java array. Vectors and multidim arrays are handled
+    % separately because R2025B's ind2sub rejects a scalar size vector
+    % (the natural representation of a 1-D length), so vectors must
+    % bypass ind2sub and index linearly.
     if isvector(data)
 
         % Dump MATLAB vectors (i.e. 2-D arrays where one dimension has size 1) as a sequences.
-        size_ = numel(data);
+        n = numel(data);
+        result = javaArray("java." + javaType, n);
+        for i = 1 : n
+            result(i) = converter(data(i));
+        end
     else
 
         % Dump MATLAB non-vector, non-scalar arrays as nested sequences.
         size_ = size(data);
-    end
-    nDims = length(size_);
-    result = javaArray("java." + javaType, size_);
-
-    % Loop over elements in N-D array via linear indexing.
-    for i = 1 : numel(data)
-
-        % Convert linear index to N-D array subscripts.
-        [subscripts{1:nDims}] = ind2sub(size_, i);
-
-        % Add scalar to Java array.
-        result(subscripts{:}) = converter(data(i));
+        nDims = length(size_);
+        result = javaArray("java." + javaType, size_);
+        subscripts = cell(1, nDims);
+        for i = 1 : numel(data)
+            % Convert linear index to N-D array subscripts.
+            [subscripts{1:nDims}] = ind2sub(size_, i);
+            result(subscripts{:}) = converter(data(i));
+        end
     end
 end
 
