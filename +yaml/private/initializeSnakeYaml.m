@@ -48,10 +48,12 @@ function initializeSnakeYaml
         fileCleanup = onCleanup(@() closeStaticClasspathFile( ...
             staticClasspathFileId, staticClasspathFile));
 
-        [seekStatus, seekMessage] = fseek(staticClasspathFileId, 0, 'eof');
+        seekStatus = fseek(staticClasspathFileId, 0, 'eof');
         if seekStatus ~= 0
+            seekErrorMessage = ferror(staticClasspathFileId);
             error('yaml:initialization:StaticClasspathIO', ...
-                'Could not seek to the end of the file: %s', seekMessage);
+                'Could not seek to the end of the file: %s', ...
+                seekErrorMessage);
         end
         staticClasspathFileLength = ftell(staticClasspathFileId);
         if staticClasspathFileLength < 0
@@ -64,11 +66,12 @@ function initializeSnakeYaml
         lineFeed = uint8(10); % LF line-ending byte.
         separatorNeeded = false;
         if staticClasspathFileLength > 0
-            [seekStatus, seekMessage] = fseek(staticClasspathFileId, -1, 'eof');
+            seekStatus = fseek(staticClasspathFileId, -1, 'eof');
             if seekStatus ~= 0
+                seekErrorMessage = ferror(staticClasspathFileId);
                 error('yaml:initialization:StaticClasspathIO', ...
                     'Could not seek to the final byte of the file: %s', ...
-                    seekMessage);
+                    seekErrorMessage);
             end
             [lastByte, bytesRead] = fread(staticClasspathFileId, 1, '*uint8');
             if bytesRead ~= 1
@@ -79,10 +82,12 @@ function initializeSnakeYaml
             separatorNeeded = lastByte ~= carriageReturn && lastByte ~= lineFeed;
         end
 
-        [seekStatus, seekMessage] = fseek(staticClasspathFileId, 0, 'eof');
+        seekStatus = fseek(staticClasspathFileId, 0, 'eof');
         if seekStatus ~= 0
+            seekErrorMessage = ferror(staticClasspathFileId);
             error('yaml:initialization:StaticClasspathIO', ...
-                'Could not restore the append position: %s', seekMessage);
+                'Could not restore the append position: %s', ...
+                seekErrorMessage);
         end
         if separatorNeeded
             textToAppend = [char(lineFeed), snakeYamlFile, char(lineFeed)];
@@ -145,11 +150,12 @@ function closeStaticClasspathFile(fileId, expectedFile)
         expectedFile (1, :) char % Expected path for the open file.
     end
 
-    openFileIds = fopen('all');
-    if ismember(fileId, openFileIds)
+    try
         openFile = fopen(fileId);
-        if strcmp(openFile, expectedFile)
-            fclose(fileId);
-        end
+    catch
+        return;
+    end
+    if strcmp(openFile, expectedFile)
+        fclose(fileId);
     end
 end
