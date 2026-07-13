@@ -2,7 +2,7 @@ function initializeSnakeYaml
 %INITIALIZESNAKEYAML Make the bundled SnakeYAML JAR available to MATLAB.
 %   INITIALIZESNAKEYAML takes no inputs and returns no outputs. If the
 %   bundled JAR is not already on MATLAB's Java classpath, this function
-%   appends its canonical path to <prefdir>/javaclasspath.txt for future
+%   appends its absolute path to <prefdir>/javaclasspath.txt for future
 %   sessions and adds it to the dynamic Java classpath for this session.
 %   MATLAB must be restarted before the appended static-classpath entry is
 %   used. Existing static-classpath file content is preserved unchanged.
@@ -25,9 +25,10 @@ function initializeSnakeYaml
     end
 
     snakeYamlJarName = 'snakeyaml-1.30.jar';
-    initializerDirectory = fileparts(mfilename('fullpath'));
-    snakeYamlFile = char(java.io.File(fullfile(initializerDirectory, '..', ...
-        'snakeyaml', snakeYamlJarName)).getCanonicalPath());
+    privateDirectory = fileparts(mfilename('fullpath'));
+    yamlPackageDirectory = fileparts(privateDirectory);
+    snakeYamlFile = fullfile( ...
+        yamlPackageDirectory, 'snakeyaml', snakeYamlJarName);
 
     javaClasspath = javaclasspath('-all');
     if any(strcmp(snakeYamlFile, javaClasspath))
